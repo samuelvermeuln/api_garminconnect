@@ -1,0 +1,14 @@
+services:
+  garmin-api:
+    build: .
+    container_name: garmin-api
+    restart: unless-stopped
+    ports:
+      - "8000:8000"
+    env_file:
+      - .env
+    volumes:
+      - ./your_data/garmin_api:/data
+    environment:
+      GARMIN_API_STORAGE: /data
+      GARMIN_API_DATABASE: /data/garmin_api.sqlite3
