@@ -68,6 +68,7 @@ Make your selection:
 [![Sponsor on GitHub](https://img.shields.io/badge/Sponsor-GitHub-red.svg?style=for-the-badge&logo=github)](https://github.com/sponsors/cyberjunky)
 
 A comprehensive Python3 API wrapper for Garmin Connect, providing access to health, fitness, and device data.
+This repository can also run as a private multi-user HTTP API for VPS deployments.
 
 ## 📖 About
 
@@ -103,6 +104,73 @@ pip install -e ".[example]"
 python3 ./example.py   # simple getting-started example
 python3 ./demo.py      # comprehensive demo (130+ API methods)
 ```
+
+## 🌐 Run as a Multi-User HTTP API
+
+This repository includes a FastAPI layer in `garmin_api/` for running Garmin
+Connect access as a private API on a VPS. Each API user can register their own
+Garmin email and password. Credentials are encrypted in SQLite, Garmin tokens
+are stored separately per account, and each account receives its own `X-API-Key`
+for later requests.
+
+Install the API extra:
+
+```bash
+pip install -e ".[api]"
+```
+
+Generate and export the required secrets:
+
+```bash
+export GARMIN_API_ENCRYPTION_KEY="$(python3 -c 'from cryptography.fernet import Fernet; print(Fernet.generate_key().decode())')"
+export GARMIN_API_ADMIN_KEY="change-this-admin-key"
+```
+
+Run locally:
+
+```bash
+uvicorn garmin_api.main:app --host 0.0.0.0 --port 8000
+```
+
+Or with Docker Compose:
+
+```bash
+cp .env.example .env
+# edit .env and set GARMIN_API_ENCRYPTION_KEY + GARMIN_API_ADMIN_KEY
+docker compose up -d --build
+```
+
+Register a Garmin account:
+
+```bash
+curl -X POST http://localhost:8000/accounts \
+  -H "Content-Type: application/json" \
+  -H "X-Admin-Key: change-this-admin-key" \
+  -d '{"email":"person@example.com","password":"garmin-password","label":"Samuel"}'
+```
+
+The response returns an `api_key`. Use it to fetch data:
+
+```bash
+curl http://localhost:8000/summary/2026-05-13 \
+  -H "X-API-Key: account-api-key"
+```
+
+If Garmin requests MFA, complete the login with:
+
+```bash
+curl -X POST http://localhost:8000/accounts/mfa \
+  -H "Content-Type: application/json" \
+  -H "X-API-Key: account-api-key" \
+  -d '{"mfa_code":"123456"}'
+```
+
+Available API endpoints include `GET /me`, `GET /summary/{date}`,
+`GET /heart-rate/{date}`, `GET /sleep/{date}`, `GET /hrv/{date}`,
+`GET /training-readiness/{date}`, `GET /body-battery`, `GET /activities`,
+`GET /activities/{activity_id}`, and activity downloads.
+
+See [`docs/api.md`](docs/api.md) for the full API guide and production notes.
 
 ## 🛠️ Development
 
