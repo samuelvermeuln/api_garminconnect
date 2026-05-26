@@ -31,3 +31,40 @@ services:
       timeout: 5s
       retries: 3
       start_period: 10s
+
+  garmin-mcp:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: python-garminconnect-api:local
+    container_name: garmin-mcp
+    restart: unless-stopped
+    profiles:
+      - mcp
+    command:
+      - garmin-mcp
+    ports:
+      - "${GARMIN_MCP_PORT:-8010}:8010"
+    env_file:
+      - .env
+    environment:
+      GARMIN_MCP_TRANSPORT: streamable-http
+      GARMIN_MCP_HOST: 0.0.0.0
+      GARMIN_MCP_PORT: 8010
+      GARMIN_MCP_PATH: /mcp
+      GARMIN_MCP_ALLOWED_HOSTS: "${GARMIN_MCP_ALLOWED_HOSTS:-localhost,127.0.0.1,garmin-mcp,167.86.116.131,167.86.116.131:8010,n8n.holdingtech.com.br}"
+      GARMIN_MCP_ALLOWED_ORIGINS: "${GARMIN_MCP_ALLOWED_ORIGINS:-https://n8n.holdingtech.com.br}"
+      GARMIN_MCP_BEARER_TOKEN: "${GARMIN_MCP_BEARER_TOKEN:-}"
+      GARMIN_MCP_MAX_RESPONSE_CHARS: "${GARMIN_MCP_MAX_RESPONSE_CHARS:-12000}"
+      GARMIN_API_BASE_URL: "${GARMIN_API_BASE_URL:-http://garmin-api:8000}"
+      GARMIN_API_KEY: "${GARMIN_API_KEY:-}"
+      GARMIN_API_ADMIN_KEY: "${GARMIN_API_ADMIN_KEY:-}"
+    depends_on:
+      garmin-api:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-fsS", "http://localhost:8010/health"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 10s

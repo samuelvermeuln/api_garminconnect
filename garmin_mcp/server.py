@@ -7,6 +7,7 @@ from datetime import date as date_type
 from typing import Any
 
 from mcp.server.fastmcp import FastMCP
+from mcp.server.transport_security import TransportSecuritySettings
 
 from .client import DEFAULT_MAX_CHARS, GarminApiClient, env_int
 from .rag import index_markdown, route_markdown, search_routes
@@ -21,7 +22,37 @@ Never ask the user for Garmin credentials in chat; this server reads
 GARMIN_API_BASE_URL, GARMIN_API_KEY and optional GARMIN_API_ADMIN_KEY from env.
 """.strip()
 
-mcp = FastMCP("Garmin Connect MCP", instructions=MCP_INSTRUCTIONS)
+
+def env_bool(name: str, default: bool = False) -> bool:
+    value = os.getenv(name)
+    if value is None:
+        return default
+    return value.strip().lower() in {"1", "true", "yes", "on"}
+
+
+def env_list(name: str) -> list[str]:
+    value = os.getenv(name, "")
+    return [item.strip() for item in value.split(",") if item.strip()]
+
+
+mcp = FastMCP(
+    "Garmin Connect MCP",
+    instructions=MCP_INSTRUCTIONS,
+    host=os.getenv("GARMIN_MCP_HOST", "127.0.0.1"),
+    port=env_int("GARMIN_MCP_PORT", 8000),
+    streamable_http_path=os.getenv("GARMIN_MCP_PATH", "/mcp"),
+    sse_path=os.getenv("GARMIN_MCP_SSE_PATH", "/sse"),
+    json_response=env_bool("GARMIN_MCP_JSON_RESPONSE", False),
+    stateless_http=env_bool("GARMIN_MCP_STATELESS_HTTP", False),
+    transport_security=TransportSecuritySettings(
+        enable_dns_rebinding_protection=not env_bool(
+            "GARMIN_MCP_DISABLE_DNS_REBINDING_PROTECTION",
+            False,
+        ),
+        allowed_hosts=env_list("GARMIN_MCP_ALLOWED_HOSTS"),
+        allowed_origins=env_list("GARMIN_MCP_ALLOWED_ORIGINS"),
+    ),
+)
 
 
 def today_iso() -> str:
@@ -40,6 +71,14 @@ def default_max_chars() -> int:
 def docs_routes() -> str:
     """Compact markdown index of all Garmin API route contracts."""
     return index_markdown()
+
+
+@mcp.custom_route("/health", methods=["GET"])
+async def health_check(_request: object) -> object:
+    """Healthcheck route for HTTP deployments."""
+    from starlette.responses import JSONResponse
+
+    return JSONResponse({"status": "ok"})
 
 
 @mcp.resource("garmin://docs/categories")
@@ -231,7 +270,46 @@ Use the Garmin MCP server in this order:
 
 def main() -> None:
     transport = os.getenv("GARMIN_MCP_TRANSPORT", "stdio")
+    if transport == "streamable-http" and os.getenv("GARMIN_MCP_BEARER_TOKEN"):
+        run_streamable_http_with_bearer()
+        return
     mcp.run(transport=transport)
+
+
+def run_streamable_http_with_bearer() -> None:
+    """Run Streamable HTTP with a simple bearer-token guard."""
+    import uvicorn
+    from starlette.middleware.base import BaseHTTPMiddleware
+    from starlette.requests import Request
+    from starlette.responses import JSONResponse, Response
+
+    token = os.environ["GARMIN_MCP_BEARER_TOKEN"]
+    app = mcp.streamable_http_app()
+
+    class BearerAuthMiddleware(BaseHTTPMiddleware):
+        def __init__(self, app: object, bearer_token: str) -> None:
+            super().__init__(app)
+            self.bearer_token = bearer_token
+
+        async def dispatch(
+            self,
+            request: Request,
+            call_next: Any,
+        ) -> Response:
+            if request.method == "OPTIONS" or request.url.path.endswith("/health"):
+                return await call_next(request)
+            expected = f"Bearer {self.bearer_token}"
+            if request.headers.get("authorization") != expected:
+                return JSONResponse({"error": "unauthorized"}, status_code=401)
+            return await call_next(request)
+
+    app.add_middleware(BearerAuthMiddleware, bearer_token=token)
+    uvicorn.run(
+        app,
+        host=mcp.settings.host,
+        port=mcp.settings.port,
+        log_level=mcp.settings.log_level.lower(),
+    )
 
 
 if __name__ == "__main__":

@@ -33,6 +33,10 @@ export GARMIN_API_ADMIN_KEY="admin-key-for-post-accounts"
 export GARMIN_MCP_MAX_RESPONSE_CHARS=12000
 export GARMIN_MCP_TIMEOUT_SECONDS=30
 export GARMIN_MCP_TRANSPORT=stdio
+export GARMIN_MCP_HOST=127.0.0.1
+export GARMIN_MCP_PORT=8000
+export GARMIN_MCP_PATH=/mcp
+export GARMIN_MCP_BEARER_TOKEN="optional-bearer-token-for-http"
 ```
 
 `GARMIN_API_KEY` is the normal account API key returned by the Garmin HTTP API.
@@ -51,6 +55,35 @@ pdm run mcp
 ```
 
 The default transport is `stdio`, which is what most desktop MCP clients expect.
+
+## Run for n8n
+
+n8n's MCP Client Tool expects an HTTP transport. The Docker Compose file includes
+an optional `garmin-mcp` service for that:
+
+```bash
+docker compose --profile mcp up -d --build garmin-mcp
+curl -fsS http://localhost:8010/health
+```
+
+Set these values in `.env` before starting it:
+
+```bash
+GARMIN_API_KEY=account-api-key-from-post-accounts
+GARMIN_MCP_PORT=8010
+GARMIN_MCP_BEARER_TOKEN=long-random-token
+GARMIN_MCP_ALLOWED_HOSTS=localhost,127.0.0.1,garmin-mcp,167.86.116.131,167.86.116.131:8010,n8n.holdingtech.com.br
+GARMIN_MCP_ALLOWED_ORIGINS=https://n8n.holdingtech.com.br
+```
+
+Use this endpoint in n8n:
+
+```text
+http://167.86.116.131:8010/mcp
+```
+
+If you put the MCP behind Traefik/HTTPS, use the HTTPS domain instead and add
+that domain to `GARMIN_MCP_ALLOWED_HOSTS`.
 
 ## Client Config Example
 
@@ -138,5 +171,7 @@ routes only when needed.
 - Keep `GARMIN_API_KEY` and `GARMIN_API_ADMIN_KEY` in the MCP client environment,
   not in prompts.
 - Prefer HTTPS for `GARMIN_API_BASE_URL` outside localhost.
+- When exposing `GARMIN_MCP_TRANSPORT=streamable-http`, set
+  `GARMIN_MCP_BEARER_TOKEN` or protect the route at your reverse proxy.
 - The MCP server returns compact payloads by default to avoid sending large
   health datasets unnecessarily.
