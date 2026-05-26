@@ -181,6 +181,21 @@ activity downloads. Interactive Scalar docs are available at `/docs`.
 
 See [`docs/api.md`](docs/api.md) for the full API guide and production notes.
 
+## Garmin MCP Server
+
+This repository also includes an MCP server for LLM clients. It exposes a
+token-efficient RAG search over the API route contracts and tools that call your
+Garmin HTTP API with `GARMIN_API_KEY`.
+
+```bash
+pip install -e ".[api,mcp]"
+export GARMIN_API_BASE_URL="http://localhost:8000"
+export GARMIN_API_KEY="account-api-key"
+python -m garmin_mcp.server
+```
+
+See [`docs/mcp.md`](docs/mcp.md) for client configuration, route IDs and usage.
+
 ## 🛠️ Development
 
 This project uses [PDM](https://pdm.fming.dev/) for dependency management and task automation.
