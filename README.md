@@ -174,8 +174,10 @@ curl -X POST http://localhost:8000/accounts/mfa \
 
 Available API endpoints include `GET /me`, `GET /summary/{date}`,
 `GET /heart-rate/{date}`, `GET /sleep/{date}`, `GET /hrv/{date}`,
-`GET /training-readiness/{date}`, `GET /body-battery`, `GET /activities`,
-`GET /activities/{activity_id}`, and activity downloads.
+`GET /training-readiness/{date}`, `GET /daily-report/{date}`,
+`GET /nutrition/food-log/{date}`, `GET /nutrition/meals/{date}`,
+`GET /body-battery`, `GET /activities`, `GET /activities/{activity_id}`, and
+activity downloads. Interactive Scalar docs are available at `/docs`.
 
 See [`docs/api.md`](docs/api.md) for the full API guide and production notes.
 

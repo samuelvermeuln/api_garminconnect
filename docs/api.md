@@ -81,22 +81,176 @@ curl http://localhost:8000/activities?start=0\&limit=20 \
   -H "X-API-Key: account-api-key"
 ```
 
-Available endpoints:
+## Interactive Docs
 
-- `GET /health`
-- `POST /accounts`
-- `POST /accounts/mfa`
-- `GET /me`
-- `GET /summary/{date}`
-- `GET /heart-rate/{date}`
-- `GET /sleep/{date}`
-- `GET /hrv/{date}`
-- `GET /training-readiness/{date}`
-- `GET /body-battery?start=YYYY-MM-DD&end=YYYY-MM-DD`
-- `GET /activities?start=0&limit=20`
-- `GET /activities/{activity_id}`
-- `GET /activities/{activity_id}/details`
-- `GET /activities/{activity_id}/download?fmt=tcx`
+Open Scalar API Reference at:
+
+```text
+http://localhost:8000/docs
+```
+
+The raw OpenAPI document is available at:
+
+```text
+http://localhost:8000/openapi.json
+```
+
+Scalar shows every route, required headers, query/path parameters, request
+bodies, response schemas and lets you test requests from the browser.
+
+## Response Shape
+
+Most data endpoints return:
+
+```json
+{
+  "account_id": "internal-account-id",
+  "data": {},
+  "cached": false
+}
+```
+
+`data` is the raw Garmin payload for that Garmin endpoint. Exact keys vary by
+device, account region, enabled features and Garmin Connect+ subscription.
+
+## Endpoints
+
+System:
+
+- `GET /health` - returns `{"status": "ok"}`.
+- `GET /docs` - Scalar interactive documentation.
+- `GET /openapi.json` - generated OpenAPI schema.
+
+Accounts:
+
+- `POST /accounts` - requires `X-Admin-Key`; registers a Garmin account and
+  returns `account_id`, `api_key`, `mfa_required` and `message`.
+- `POST /accounts/mfa` - requires `X-API-Key`; completes a pending Garmin MFA
+  login and returns a status message.
+- `GET /me` - requires `X-API-Key`; checks whether the account can authenticate
+  with Garmin.
+- `GET /devices` - requires `X-API-Key`; returns devices registered to the
+  Garmin account.
+
+Daily report:
+
+- `GET /daily-report/{date}` - requires `X-API-Key`; returns one aggregated
+  report for the day with `summary`, `health`, `training`, `body`, `nutrition`
+  and `warnings`. Sections that Garmin does not return are `null` and described
+  in `warnings`.
+
+Health:
+
+- `GET /summary/{date}` - daily summary: calories, steps, distance and all-day
+  totals when available.
+- `GET /stats/{date}` - compatibility alias for daily summary.
+- `GET /heart-rate/{date}` - daily heart-rate values and timeline.
+- `GET /sleep/{date}` - sleep summary, sleep stages and sleep measurements.
+- `GET /hrv/{date}` - heart-rate variability data.
+- `GET /stress/{date}` - daily stress data.
+- `GET /resting-heart-rate/{date}` - resting heart-rate metric.
+- `GET /respiration/{date}` - respiration data.
+- `GET /spo2/{date}` - blood oxygen saturation data.
+- `GET /hydration/{date}` - hydration data.
+- `GET /intensity-minutes/{date}` - intensity-minutes data.
+- `GET /steps/{date}` - intraday step chart.
+- `GET /daily-steps?start=YYYY-MM-DD&end=YYYY-MM-DD` - daily step totals for a
+  range.
+- `GET /floors/{date}` - floors-climbed data.
+
+Training:
+
+- `GET /training-readiness/{date}` - Garmin training readiness data.
+- `GET /training-status/{date}` - aggregated training status.
+- `GET /max-metrics/{date}` - performance max metrics such as VO2 data when
+  available.
+- `GET /fitness-age/{date}` - fitness-age data.
+- `GET /activities?start=0&limit=20&activity_type=running` - paginated activity
+  list.
+- `GET /activities/{activity_id}` - activity summary/details.
+- `GET /activities/{activity_id}/details?maxchart=2000&maxpoly=4000` - detailed
+  chart and polyline payload.
+- `GET /activities/{activity_id}/download?fmt=tcx` - raw activity file. Formats:
+  `original`, `tcx`, `gpx`, `kml`, `csv`.
+
+Body:
+
+- `GET /body-battery?start=YYYY-MM-DD&end=YYYY-MM-DD` - body battery values for
+  a date or range.
+- `GET /body-battery/events/{date}` - body battery events such as sleep,
+  activities, auto-detected events and naps.
+- `GET /body-composition?start=YYYY-MM-DD&end=YYYY-MM-DD` - weight and body
+  composition range.
+- `GET /stats-and-body/{date}` - daily summary merged with body-composition
+  averages.
+- `GET /weigh-ins?start=YYYY-MM-DD&end=YYYY-MM-DD` - weigh-ins for a range.
+- `GET /weigh-ins/{date}` - weigh-ins for one day.
+- `GET /blood-pressure?start=YYYY-MM-DD&end=YYYY-MM-DD` - blood-pressure
+  measurements for a date or range.
+
+Nutrition:
+
+- `GET /nutrition/food-log/{date}` - Garmin Connect+ daily food log. Expected
+  Garmin data can include consumed calories, macronutrients and logged food
+  summaries when the account has nutrition tracking.
+- `GET /nutrition/meals/{date}` - Garmin Connect+ meal entries for the day.
+- `GET /nutrition/settings/{date}` - Garmin Connect+ calorie and macro targets
+  and nutrition settings when Garmin returns them.
+- `POST /nutrition/food-photo/analyze` - multipart image upload placeholder for
+  Garmin Connect+ photo-based food logging. It validates `image/*` uploads and
+  returns HTTP 501 until the upstream Garmin photo upload endpoint is mapped in
+  this wrapper.
+
+Garmin announced Nutrition Tracking for Garmin Connect+ on January 5, 2026. The
+official Garmin newsroom says the app supports calorie and macro tracking,
+daily/weekly/monthly/annual nutrition reports, barcode scanning and AI-powered
+camera recognition for logging foods:
+<https://www.garmin.com/en-US/newsroom/press-release/sports-fitness/stay-on-top-of-nutrition-goals-in-garmin-connect/>.
+Garmin device documentation also describes Connect+ nutritional logging and
+nutrition reports:
+<https://www8.garmin.com/manuals/webhelp/GUID-C144B465-A0C8-4FE9-AFE6-41A3FE3F1D9A/EN-US/GUID-476303CC-9A30-4D97-B3E2-978EAE76647B.html>.
+
+## Examples
+
+Daily report:
+
+```bash
+curl http://localhost:8000/daily-report/2026-05-26 \
+  -H "X-API-Key: account-api-key"
+```
+
+Nutrition food log:
+
+```bash
+curl http://localhost:8000/nutrition/food-log/2026-05-26 \
+  -H "X-API-Key: account-api-key"
+```
+
+Food photo placeholder:
+
+```bash
+curl -X POST http://localhost:8000/nutrition/food-photo/analyze \
+  -H "X-API-Key: account-api-key" \
+  -F "photo=@meal.jpg;type=image/jpeg" \
+  -F "meal_type=lunch" \
+  -F "notes=rice, chicken and salad"
+```
+
+Expected response until Garmin photo upload is implemented:
+
+```json
+{
+  "account_id": "internal-account-id",
+  "status": "unsupported",
+  "message": "Garmin Connect+ supports photo-based food logging in the app, but this private wrapper has no mapped Garmin upload endpoint yet.",
+  "garmin_connect_plus_feature": true,
+  "filename": "meal.jpg",
+  "content_type": "image/jpeg",
+  "meal_type": "lunch",
+  "notes": "rice, chicken and salad",
+  "next_steps": []
+}
+```
 
 ## Production Notes
 

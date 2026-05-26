@@ -125,7 +125,14 @@ class GarminAccountService:
         now = time.time()
         if cached and now - cached[0] <= self.cache_ttl_seconds:
             return cached[1], True
-        data = fn()
+        try:
+            data = fn()
+        except GarminConnectAuthenticationError as err:
+            raise GarminApiAuthError(str(err)) from err
+        except GarminConnectTooManyRequestsError as err:
+            raise GarminApiRateLimitError(str(err)) from err
+        except GarminConnectConnectionError as err:
+            raise GarminApiConnectionError(str(err)) from err
         self._cache[key] = (now, data)
         return data, False
 
