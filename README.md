@@ -140,6 +140,13 @@ cp .env.example .env
 docker compose up -d --build
 ```
 
+If port `8000` is already in use, set another host port in `.env` before
+starting Compose:
+
+```bash
+GARMIN_API_PORT=8001
+```
+
 Register a Garmin account:
 
 ```bash

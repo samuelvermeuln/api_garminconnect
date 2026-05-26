@@ -39,6 +39,13 @@ Or run with Docker Compose:
 docker compose up -d --build
 ```
 
+If port `8000` is already allocated on the host, set another host port in your
+`.env` file:
+
+```bash
+GARMIN_API_PORT=8001
+```
+
 ## Register a Garmin Account
 
 ```bash
