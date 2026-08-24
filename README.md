@@ -119,38 +119,36 @@ Install the API extra:
 pip install -e ".[api]"
 ```
 
-Generate and export the required secrets:
+Generate the required secrets:
 
 ```bash
-export GARMIN_API_ENCRYPTION_KEY="$(python3 -c 'from cryptography.fernet import Fernet; print(Fernet.generate_key().decode())')"
-export GARMIN_API_ADMIN_KEY="change-this-admin-key"
+python3 -c 'from cryptography.fernet import Fernet; print(Fernet.generate_key().decode())'
 ```
 
 Run locally:
 
 ```bash
-uvicorn garmin_api.main:app --host 0.0.0.0 --port 8000
+export GARMIN_API_ENCRYPTION_KEY="paste-generated-key"
+export GARMIN_API_ADMIN_KEY="change-this-admin-key"
+export GARMIN_API_ALLOWED_HOSTS="localhost,127.0.0.1"
+uvicorn garmin_api.main:app --host 0.0.0.0 --port 8001
 ```
 
 Or with Docker Compose:
 
 ```bash
 cp .env.example .env
-# edit .env and set GARMIN_API_ENCRYPTION_KEY + GARMIN_API_ADMIN_KEY
+# edit .env and set GARMIN_API_ENCRYPTION_KEY
+# recommended: set GARMIN_API_ADMIN_KEY
+# set GARMIN_API_ALLOWED_HOSTS with localhost plus your public domain/IP
+# optional: change GARMIN_API_PORT if needed
 docker compose up -d --build
-```
-
-If port `8000` is already in use, set another host port in `.env` before
-starting Compose:
-
-```bash
-GARMIN_API_PORT=8001
 ```
 
 Register a Garmin account:
 
 ```bash
-curl -X POST http://localhost:8000/accounts \
+curl -X POST http://localhost:8001/accounts \
   -H "Content-Type: application/json" \
   -H "X-Admin-Key: change-this-admin-key" \
   -d '{"email":"person@example.com","password":"garmin-password","label":"Samuel"}'
@@ -159,14 +157,14 @@ curl -X POST http://localhost:8000/accounts \
 The response returns an `api_key`. Use it to fetch data:
 
 ```bash
-curl http://localhost:8000/summary/2026-05-13 \
+curl http://localhost:8001/summary/2026-05-13 \
   -H "X-API-Key: account-api-key"
 ```
 
 If Garmin requests MFA, complete the login with:
 
 ```bash
-curl -X POST http://localhost:8000/accounts/mfa \
+curl -X POST http://localhost:8001/accounts/mfa \
   -H "Content-Type: application/json" \
   -H "X-API-Key: account-api-key" \
   -d '{"mfa_code":"123456"}'
@@ -179,22 +177,9 @@ Available API endpoints include `GET /me`, `GET /summary/{date}`,
 `GET /body-battery`, `GET /activities`, `GET /activities/{activity_id}`, and
 activity downloads. Interactive Scalar docs are available at `/docs`.
 
-See [`docs/api.md`](docs/api.md) for the full API guide and production notes.
-
-## Garmin MCP Server
-
-This repository also includes an MCP server for LLM clients. It exposes a
-token-efficient RAG search over the API route contracts and tools that call your
-Garmin HTTP API with `GARMIN_API_KEY`.
-
-```bash
-pip install -e ".[api,mcp]"
-export GARMIN_API_BASE_URL="http://localhost:8000"
-export GARMIN_API_KEY="account-api-key"
-python -m garmin_mcp.server
-```
-
-See [`docs/mcp.md`](docs/mcp.md) for client configuration, route IDs and usage.
+See:
+- [`docs/api.md`](docs/api.md) - setup, auth and production notes.
+- [`docs/routes.md`](docs/routes.md) - full route catalog with return shapes.
 
 ## 🛠️ Development
 

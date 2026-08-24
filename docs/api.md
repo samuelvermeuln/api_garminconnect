@@ -23,14 +23,19 @@ Create your environment:
 
 ```bash
 cp .env.example .env
-export GARMIN_API_ENCRYPTION_KEY="paste-generated-key"
-export GARMIN_API_ADMIN_KEY="change-this-admin-key"
+# set GARMIN_API_ENCRYPTION_KEY in .env
+# recommended: set GARMIN_API_ADMIN_KEY
+# set GARMIN_API_ALLOWED_HOSTS with localhost plus your public domain/IP
+# optional: change GARMIN_API_PORT if 8001 is in use
 ```
 
 Run locally:
 
 ```bash
-uvicorn garmin_api.main:app --host 0.0.0.0 --port 8000
+export GARMIN_API_ENCRYPTION_KEY="paste-generated-key"
+export GARMIN_API_ADMIN_KEY="change-this-admin-key"
+export GARMIN_API_ALLOWED_HOSTS="localhost,127.0.0.1"
+uvicorn garmin_api.main:app --host 0.0.0.0 --port 8001
 ```
 
 Or run with Docker Compose:
@@ -39,17 +44,10 @@ Or run with Docker Compose:
 docker compose up -d --build
 ```
 
-If port `8000` is already allocated on the host, set another host port in your
-`.env` file:
-
-```bash
-GARMIN_API_PORT=8001
-```
-
 ## Register a Garmin Account
 
 ```bash
-curl -X POST http://localhost:8000/accounts \
+curl -X POST http://localhost:8001/accounts \
   -H "Content-Type: application/json" \
   -H "X-Admin-Key: change-this-admin-key" \
   -d '{
@@ -65,7 +63,7 @@ stored by the API.
 If Garmin asks for MFA, the response has `mfa_required: true`. Complete it:
 
 ```bash
-curl -X POST http://localhost:8000/accounts/mfa \
+curl -X POST http://localhost:8001/accounts/mfa \
   -H "Content-Type: application/json" \
   -H "X-API-Key: account-api-key" \
   -d '{"mfa_code": "123456"}'
@@ -74,10 +72,10 @@ curl -X POST http://localhost:8000/accounts/mfa \
 ## Fetch Data
 
 ```bash
-curl http://localhost:8000/summary/2026-05-13 \
+curl http://localhost:8001/summary/2026-05-13 \
   -H "X-API-Key: account-api-key"
 
-curl http://localhost:8000/activities?start=0\&limit=20 \
+curl http://localhost:8001/activities?start=0\&limit=20 \
   -H "X-API-Key: account-api-key"
 ```
 
@@ -86,13 +84,13 @@ curl http://localhost:8000/activities?start=0\&limit=20 \
 Open Scalar API Reference at:
 
 ```text
-http://localhost:8000/docs
+http://localhost:8001/docs
 ```
 
 The raw OpenAPI document is available at:
 
 ```text
-http://localhost:8000/openapi.json
+http://localhost:8001/openapi.json
 ```
 
 Scalar shows every route, required headers, query/path parameters, request
@@ -114,6 +112,10 @@ Most data endpoints return:
 device, account region, enabled features and Garmin Connect+ subscription.
 
 ## Endpoints
+
+Full route catalog with return summaries:
+
+- [`docs/routes.md`](routes.md)
 
 System:
 
@@ -215,21 +217,21 @@ nutrition reports:
 Daily report:
 
 ```bash
-curl http://localhost:8000/daily-report/2026-05-26 \
+curl http://localhost:8001/daily-report/2026-05-26 \
   -H "X-API-Key: account-api-key"
 ```
 
 Nutrition food log:
 
 ```bash
-curl http://localhost:8000/nutrition/food-log/2026-05-26 \
+curl http://localhost:8001/nutrition/food-log/2026-05-26 \
   -H "X-API-Key: account-api-key"
 ```
 
 Food photo placeholder:
 
 ```bash
-curl -X POST http://localhost:8000/nutrition/food-photo/analyze \
+curl -X POST http://localhost:8001/nutrition/food-photo/analyze \
   -H "X-API-Key: account-api-key" \
   -F "photo=@meal.jpg;type=image/jpeg" \
   -F "meal_type=lunch" \
@@ -256,6 +258,7 @@ Expected response until Garmin photo upload is implemented:
 
 - Use HTTPS on the VPS.
 - Set `GARMIN_API_ADMIN_KEY`; otherwise anyone can create accounts.
+- Set `GARMIN_API_ALLOWED_HOSTS` to `localhost,127.0.0.1,<your-domain>,<your-ip>`.
 - Back up `your_data/garmin_api`, especially the SQLite database and token
   directories.
 - Keep `GARMIN_API_ENCRYPTION_KEY` outside the repository. If it is lost, stored

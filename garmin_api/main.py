@@ -16,6 +16,7 @@ from fastapi import (
 )
 from fastapi.responses import HTMLResponse, JSONResponse, Response
 from fastapi.security import APIKeyHeader
+from starlette.middleware.trustedhost import TrustedHostMiddleware
 
 from garminconnect import (
     Garmin,
@@ -109,6 +110,7 @@ app = FastAPI(
     redoc_url=None,
     openapi_tags=OPENAPI_TAGS,
 )
+app.add_middleware(TrustedHostMiddleware, allowed_hosts=settings.allowed_hosts)
 
 
 @app.exception_handler(GarminApiError)

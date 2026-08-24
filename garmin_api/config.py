@@ -12,6 +12,15 @@ class Settings:
     encryption_key: str
     admin_key: str | None
     cache_ttl_seconds: int
+    allowed_hosts: list[str]
+
+
+def parse_env_list(value: str | None, default: list[str]) -> list[str]:
+    if not value:
+        return default
+
+    parsed = [item.strip() for item in value.split(",") if item.strip()]
+    return parsed or default
 
 
 def get_settings() -> Settings:
@@ -33,4 +42,8 @@ def get_settings() -> Settings:
         encryption_key=encryption_key,
         admin_key=os.getenv("GARMIN_API_ADMIN_KEY"),
         cache_ttl_seconds=int(os.getenv("GARMIN_API_CACHE_TTL_SECONDS", "120")),
+        allowed_hosts=parse_env_list(
+            os.getenv("GARMIN_API_ALLOWED_HOSTS"),
+            ["localhost", "127.0.0.1"],
+        ),
     )

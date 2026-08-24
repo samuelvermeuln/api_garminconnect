@@ -12,11 +12,9 @@ RUN apt-get update \
 COPY pyproject.toml README.md ./
 COPY garminconnect ./garminconnect
 COPY garmin_api ./garmin_api
-COPY garmin_mcp ./garmin_mcp
 
-RUN pip install --no-cache-dir -e ".[api,mcp]"
+RUN pip install --no-cache-dir -e ".[api]"
 
-EXPOSE 8000
-EXPOSE 8010
+EXPOSE 8001
 
-CMD ["uvicorn", "garmin_api.main:app", "--host", "0.0.0.0", "--port", "8000"]
+CMD ["uvicorn", "garmin_api.main:app", "--host", "0.0.0.0", "--port", "8001"]
