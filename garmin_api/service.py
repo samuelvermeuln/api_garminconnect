@@ -107,6 +107,9 @@ class GarminAccountService:
         except GarminConnectConnectionError as err:
             raise GarminApiConnectionError(str(err)) from err
 
+    def revalidate_account(self, account: Account) -> bool:
+        return self.login_account(account, return_on_mfa=True)
+
     def get_garmin(self, account: Account) -> Garmin:
         garmin = self._build_garmin(account, return_on_mfa=False)
         try:

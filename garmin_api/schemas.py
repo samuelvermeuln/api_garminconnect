@@ -55,6 +55,18 @@ class AccountStatusResponse(BaseModel):
     authenticated: bool = Field(description="True when Garmin login/token refresh works.")
 
 
+class AccountRevalidateResponse(BaseModel):
+    account_id: str = Field(description="Internal account id.")
+    authenticated: bool = Field(
+        description="True when Garmin login was revalidated without MFA."
+    )
+    mfa_required: bool = Field(
+        default=False,
+        description="Whether Garmin requested MFA during revalidation.",
+    )
+    message: str = Field(description="Human-readable next step.")
+
+
 class DataResponse(BaseModel):
     account_id: str = Field(description="Internal account id.")
     data: Any = Field(

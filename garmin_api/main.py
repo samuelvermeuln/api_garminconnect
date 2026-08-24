@@ -27,6 +27,7 @@ from .config import get_settings
 from .schemas import (
     AccountCreateRequest,
     AccountCreateResponse,
+    AccountRevalidateResponse,
     AccountStatusResponse,
     DataResponse,
     DailyReportResponse,
@@ -235,6 +236,36 @@ def complete_mfa(
 ) -> dict[str, str]:
     service.complete_mfa(account, payload.mfa_code)
     return {"status": "ok", "message": "MFA completed and Garmin tokens saved."}
+
+
+@app.post(
+    "/accounts/revalidate",
+    response_model=AccountRevalidateResponse,
+    tags=["accounts"],
+    summary="Revalidate Garmin login using stored credentials",
+    description=(
+        "Retries Garmin login for the current account using credentials already "
+        "stored by the API. Useful when a client needs to refresh Garmin tokens "
+        "without re-sending email and password."
+    ),
+    responses=API_KEY_RESPONSES,
+)
+def revalidate_account(
+    account: Account = Depends(current_account),
+) -> AccountRevalidateResponse:
+    mfa_required = service.revalidate_account(account)
+    message = (
+        "Garmin requested MFA during revalidation. Disable 2FA temporarily or "
+        "complete the MFA flow outside this integration before trying again."
+        if mfa_required
+        else "Garmin login revalidated successfully."
+    )
+    return AccountRevalidateResponse(
+        account_id=account.id,
+        authenticated=not mfa_required,
+        mfa_required=mfa_required,
+        message=message,
+    )
 
 
 @app.get(
