@@ -77,6 +77,9 @@ curl http://localhost:8001/summary/2026-05-13 \
 
 curl http://localhost:8001/activities?start=0\&limit=20 \
   -H "X-API-Key: account-api-key"
+
+curl http://localhost:8001/activities/latest?fresh=true \
+  -H "X-API-Key: account-api-key"
 ```
 
 ## Interactive Docs
@@ -169,9 +172,20 @@ Training:
 - `GET /fitness-age/{date}` - fitness-age data.
 - `GET /activities?start=0&limit=20&activity_type=running` - paginated activity
   list.
+- `GET /activities/latest?fresh=true` - most recent activity using
+  `get_activities(0, 1)`. `fresh=true` bypasses the API cache for lightweight
+  near real-time detectors.
 - `GET /activities/{activity_id}` - activity summary/details.
 - `GET /activities/{activity_id}/details?maxchart=2000&maxpoly=4000` - detailed
   chart and polyline payload.
+- `GET /activities/{activity_id}/splits` - generic laps/splits payload.
+- `GET /activities/{activity_id}/typed-splits` - sport-specific split payload.
+- `GET /activities/{activity_id}/split-summaries` - summarized split blocks.
+- `GET /activities/{activity_id}/weather` - Garmin weather payload for activity.
+- `GET /activities/{activity_id}/hr-zones` - time in heart-rate zones.
+- `GET /activities/{activity_id}/power-zones` - time in power zones.
+- `GET /activities/{activity_id}/exercise-sets` - exercise sets for strength/gym
+  sessions when available.
 - `GET /activities/{activity_id}/download?fmt=tcx` - raw activity file. Formats:
   `original`, `tcx`, `gpx`, `kml`, `csv`.
 

@@ -151,6 +151,19 @@ def cached_data(
     return DataResponse(account_id=account.id, data=data, cached=cached)
 
 
+def _latest_activity_from_payload(payload: Any) -> Any | None:
+    if isinstance(payload, list):
+        return payload[0] if payload else None
+
+    if isinstance(payload, dict):
+        activity_list = payload.get("activityList")
+
+        if isinstance(activity_list, list):
+            return activity_list[0] if activity_list else None
+
+    return None
+
+
 @app.get("/docs", include_in_schema=False)
 def scalar_docs() -> HTMLResponse:
     return HTMLResponse(
@@ -1072,6 +1085,35 @@ def activities(
 
 
 @app.get(
+    "/activities/latest",
+    response_model=DataResponse,
+    tags=["training"],
+    summary="Get latest activity",
+    description=(
+        "Returns only the most recent Garmin activity using get_activities(0, 1). "
+        "Set fresh=true to bypass the API cache for near real-time detectors."
+    ),
+    responses=API_KEY_RESPONSES,
+)
+def latest_activity(
+    fresh: bool = Query(
+        default=True,
+        description="Bypass the 120s API cache and query Garmin Connect directly.",
+    ),
+    account: Account = Depends(current_account),
+) -> DataResponse:
+    def load() -> Any | None:
+        garmin = service.get_garmin(account)
+        return _latest_activity_from_payload(garmin.get_activities(0, 1))
+
+    if fresh:
+        return DataResponse(account_id=account.id, data=load(), cached=False)
+
+    data, cached = service.cached_call(account, ("activities-latest",), load)
+    return DataResponse(account_id=account.id, data=data, cached=cached)
+
+
+@app.get(
     "/activities/{activity_id}",
     response_model=DataResponse,
     tags=["training"],
@@ -1111,6 +1153,135 @@ def activity_details(
         account,
         ("activity-details", activity_id, maxchart, maxpoly),
         lambda garmin: garmin.get_activity_details(activity_id, maxchart, maxpoly),
+    )
+
+
+@app.get(
+    "/activities/{activity_id}/splits",
+    response_model=DataResponse,
+    tags=["training"],
+    summary="Get activity splits",
+    description="Returns generic Garmin laps/splits for one activity when available.",
+    responses=API_KEY_RESPONSES,
+)
+def activity_splits(
+    activity_id: str, account: Account = Depends(current_account)
+) -> DataResponse:
+    return cached_data(
+        account,
+        ("activity-splits", activity_id),
+        lambda garmin: garmin.get_activity_splits(activity_id),
+    )
+
+
+@app.get(
+    "/activities/{activity_id}/typed-splits",
+    response_model=DataResponse,
+    tags=["training"],
+    summary="Get activity typed splits",
+    description=(
+        "Returns Garmin sport-specific split payloads for one activity, useful "
+        "for swimming, multisport and other modalities with custom structures."
+    ),
+    responses=API_KEY_RESPONSES,
+)
+def activity_typed_splits(
+    activity_id: str, account: Account = Depends(current_account)
+) -> DataResponse:
+    return cached_data(
+        account,
+        ("activity-typed-splits", activity_id),
+        lambda garmin: garmin.get_activity_typed_splits(activity_id),
+    )
+
+
+@app.get(
+    "/activities/{activity_id}/split-summaries",
+    response_model=DataResponse,
+    tags=["training"],
+    summary="Get activity split summaries",
+    description="Returns Garmin summarized split blocks for one activity when available.",
+    responses=API_KEY_RESPONSES,
+)
+def activity_split_summaries(
+    activity_id: str, account: Account = Depends(current_account)
+) -> DataResponse:
+    return cached_data(
+        account,
+        ("activity-split-summaries", activity_id),
+        lambda garmin: garmin.get_activity_split_summaries(activity_id),
+    )
+
+
+@app.get(
+    "/activities/{activity_id}/weather",
+    response_model=DataResponse,
+    tags=["training"],
+    summary="Get activity weather",
+    description="Returns Garmin weather data for one outdoor activity when available.",
+    responses=API_KEY_RESPONSES,
+)
+def activity_weather(
+    activity_id: str, account: Account = Depends(current_account)
+) -> DataResponse:
+    return cached_data(
+        account,
+        ("activity-weather", activity_id),
+        lambda garmin: garmin.get_activity_weather(activity_id),
+    )
+
+
+@app.get(
+    "/activities/{activity_id}/hr-zones",
+    response_model=DataResponse,
+    tags=["training"],
+    summary="Get activity heart-rate zones",
+    description="Returns Garmin time-in-heart-rate-zones data for one activity when available.",
+    responses=API_KEY_RESPONSES,
+)
+def activity_hr_zones(
+    activity_id: str, account: Account = Depends(current_account)
+) -> DataResponse:
+    return cached_data(
+        account,
+        ("activity-hr-zones", activity_id),
+        lambda garmin: garmin.get_activity_hr_in_timezones(activity_id),
+    )
+
+
+@app.get(
+    "/activities/{activity_id}/power-zones",
+    response_model=DataResponse,
+    tags=["training"],
+    summary="Get activity power zones",
+    description="Returns Garmin time-in-power-zones data for one activity when available.",
+    responses=API_KEY_RESPONSES,
+)
+def activity_power_zones(
+    activity_id: str, account: Account = Depends(current_account)
+) -> DataResponse:
+    return cached_data(
+        account,
+        ("activity-power-zones", activity_id),
+        lambda garmin: garmin.get_activity_power_in_timezones(activity_id),
+    )
+
+
+@app.get(
+    "/activities/{activity_id}/exercise-sets",
+    response_model=DataResponse,
+    tags=["training"],
+    summary="Get activity exercise sets",
+    description="Returns Garmin exercise-set breakdown for strength and gym activities when available.",
+    responses=API_KEY_RESPONSES,
+)
+def activity_exercise_sets(
+    activity_id: str, account: Account = Depends(current_account)
+) -> DataResponse:
+    return cached_data(
+        account,
+        ("activity-exercise-sets", activity_id),
+        lambda garmin: garmin.get_activity_exercise_sets(activity_id),
     )
 
 

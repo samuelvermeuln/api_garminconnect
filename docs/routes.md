@@ -222,6 +222,34 @@ Most Garmin data routes return:
 - Auth: `X-API-Key`
 - Returns: detailed chart and polyline payload inside standard data wrapper.
 
+### `GET /activities/{activity_id}/splits`
+- Auth: `X-API-Key`
+- Returns: generic laps/splits payload inside standard data wrapper.
+
+### `GET /activities/{activity_id}/typed-splits`
+- Auth: `X-API-Key`
+- Returns: sport-specific split payload inside standard data wrapper.
+
+### `GET /activities/{activity_id}/split-summaries`
+- Auth: `X-API-Key`
+- Returns: summarized split blocks inside standard data wrapper.
+
+### `GET /activities/{activity_id}/weather`
+- Auth: `X-API-Key`
+- Returns: Garmin weather payload for one activity inside standard data wrapper.
+
+### `GET /activities/{activity_id}/hr-zones`
+- Auth: `X-API-Key`
+- Returns: time-in-heart-rate-zones payload inside standard data wrapper.
+
+### `GET /activities/{activity_id}/power-zones`
+- Auth: `X-API-Key`
+- Returns: time-in-power-zones payload inside standard data wrapper.
+
+### `GET /activities/{activity_id}/exercise-sets`
+- Auth: `X-API-Key`
+- Returns: exercise-set payload inside standard data wrapper when Garmin provides it.
+
 ### `GET /activities/{activity_id}/download?fmt=original|tcx|gpx|kml|csv`
 - Auth: `X-API-Key`
 - Returns: raw activity file download.
