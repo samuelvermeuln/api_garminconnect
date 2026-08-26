@@ -710,7 +710,10 @@ class Garmin:
         except FileNotFoundError:
             raise
         except Exception as e:
-            if isinstance(e, GarminConnectAuthenticationError):
+            if isinstance(
+                e,
+                GarminConnectAuthenticationError | GarminConnectTooManyRequestsError,
+            ):
                 raise
             error_str = str(e).lower()
             auth_indicators = ["401", "unauthorized", "authentication", "login failed"]

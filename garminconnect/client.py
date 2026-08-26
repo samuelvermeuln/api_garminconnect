@@ -296,10 +296,11 @@ class Client:
                 last_err = e
                 continue
 
-        if rate_limited_count == len(strategies):
+        if rate_limited_count:
             raise GarminConnectTooManyRequestsError(
-                "All login strategies rate limited (429). "
-                "Try again later or check your IP/network."
+                f"{rate_limited_count} login strategies rate limited (429). "
+                "Try again later or check your IP/network. "
+                f"Last error: {last_err}"
             )
         raise GarminConnectConnectionError(
             f"All login strategies exhausted: {last_err}"
